@@ -1,0 +1,19 @@
+{
+  "task": "ordinal_regression",
+  "input_size": 300,
+  "input_range": "raw 0-255 (no /255)",
+  "output": "single float severity score; class = np.digitize(score, thresholds)",
+  "thresholds": [
+    0.6000000000000001,
+    1.075,
+    2.8,
+    3.425
+  ],
+  "classes": [
+    "No DR",
+    "Mild",
+    "Moderate",
+    "Severe",
+    "PDR"
+  ]
+}

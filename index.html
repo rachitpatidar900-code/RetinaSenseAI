@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RetinaSense AI</title>
+<style>
+:root{
+  --bg:#141414; --panel:#1f1f1f; --panel-2:#2a2a2a; --text:#ffffff; --muted:#c9c9c9;
+  --line:#3a3a3a; --accent:#e50914; --accent-hover:#ff1f2b;
+  --glow:0 0 22px rgba(229,9,20,.45), 0 0 4px rgba(229,9,20,.6);
+  --g0:#22c55e; --g1:#84cc16; --g2:#f59e0b; --g3:#f97316; --g4:#ef4444;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font:600 16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3,h4{font-weight:900}
+
+/* top bar: solid, so nothing scrolls under the text */
+nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
+  padding:16px 4vw;background:#0d0d0d;border-bottom:1px solid var(--line)}
+.brand{font-size:1.4rem;font-weight:900;letter-spacing:.5px;color:var(--accent);text-shadow:0 0 14px rgba(229,9,20,.6)}
+.brand span{color:var(--text)}
+nav .tag{font-size:.8rem;font-weight:800;color:var(--text);border:1px solid var(--accent);padding:4px 10px;
+  border-radius:4px;box-shadow:var(--glow)}
+
+/* hero: two columns, no overlap */
+.hero{
+  display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;
+  max-width:1200px;margin:0 auto;padding:64px 4vw 48px;
+  background:radial-gradient(circle at 80% 30%,rgba(159,29,29,.45) 0%,rgba(42,11,11,.4) 35%,transparent 70%);
+}
+.hero-text h1{font-size:clamp(2.2rem,4.5vw,3.4rem);line-height:1.1;margin:0 0 16px;
+  text-shadow:0 0 24px rgba(229,9,20,.4)}
+.hero-text p{color:#ececec;font-size:1.12rem;font-weight:700;margin:0}
+.pill{display:inline-block;background:var(--accent);color:#fff;border-radius:4px;
+  padding:5px 12px;font-size:.8rem;font-weight:900;margin-bottom:18px;letter-spacing:.6px;box-shadow:var(--glow)}
+
+/* upload card */
+.upload{background:rgba(20,20,20,.94);border:1px solid var(--accent);border-radius:10px;padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6),var(--glow)}
+.upload h2{margin:0 0 4px;font-size:1.4rem}
+.hint{color:var(--muted);font-size:.92rem;font-weight:700;margin:0 0 16px}
+#drop{border:2px dashed var(--accent);border-radius:8px;padding:30px 16px;text-align:center;cursor:pointer;
+  color:#dcdcdc;font-weight:800;transition:.2s;background:var(--panel);box-shadow:inset 0 0 18px rgba(229,9,20,.18)}
+#drop:hover,#drop.over{background:var(--panel-2);color:#fff;box-shadow:inset 0 0 26px rgba(229,9,20,.35),var(--glow)}
+#drop .icon{font-size:2rem;display:block;margin-bottom:6px;text-shadow:0 0 14px rgba(229,9,20,.7)}
+#drop small{display:block;opacity:.85;margin-top:6px;font-size:.82rem;font-weight:700}
+#preview{display:none;width:100%;max-height:300px;object-fit:contain;border-radius:8px;margin:0 0 14px;
+  background:#000;box-shadow:var(--glow)}
+button{background:var(--accent);color:#fff;border:0;border-radius:4px;padding:13px 28px;font-size:1.05rem;
+  font-weight:900;cursor:pointer;transition:background .2s,box-shadow .2s;width:100%;margin-top:14px;box-shadow:var(--glow)}
+button:hover:not(:disabled){background:var(--accent-hover);box-shadow:0 0 30px rgba(229,9,20,.7)}
+button:disabled{background:#4a4a4a;color:#bbb;cursor:not-allowed;box-shadow:none}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-right-color:transparent;
+  border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{display:none;background:#3b1212;color:#fecaca;font-weight:800;border-radius:6px;padding:10px 14px;margin-top:12px;
+  box-shadow:0 0 18px rgba(239,68,68,.4)}
+
+/* result panel */
+#result{display:none;max-width:1200px;margin:8px auto 0;background:var(--panel);border-radius:10px;padding:26px;
+  border:1px solid var(--accent);box-shadow:var(--glow)}
+.badge{display:inline-block;padding:9px 20px;border-radius:4px;color:#fff;font-weight:900;font-size:1.15rem;
+  box-shadow:0 0 22px currentColor}
+.scale{display:flex;gap:6px;margin:18px 0 12px}
+.scale div{flex:1;height:9px;border-radius:4px;background:#3a3a3a;transition:background .3s}
+.scale div.on{background:currentColor;box-shadow:0 0 12px currentColor}
+.meta{display:flex;gap:10px;flex-wrap:wrap;color:#ddd;font-size:.95rem;font-weight:800}
+.meta span{background:var(--panel-2);padding:5px 12px;border-radius:4px;box-shadow:0 0 10px rgba(229,9,20,.2)}
+.meta span:empty{display:none}
+#advice{margin:14px 0 0;font-size:1.1rem;font-weight:800}
+.warn{display:none;background:#3a2e0a;color:#fde68a;font-weight:800;border-radius:6px;padding:12px 16px;
+  margin-top:14px;box-shadow:0 0 18px rgba(245,158,11,.35)}
+.disc{color:var(--muted);font-size:.85rem;font-weight:700;margin:18px 0 0;border-top:1px solid var(--line);padding-top:12px}
+
+/* how it works */
+section.row{max-width:1200px;margin:0 auto;padding:40px 4vw 8px}
+section.row h3{font-size:1.5rem;margin:0 0 16px;font-weight:900}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.card{background:var(--panel);border-radius:8px;padding:20px;border-left:4px solid var(--accent);
+  box-shadow:0 0 18px rgba(229,9,20,.25);transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:var(--glow);transform:translateY(-2px)}
+.card h4{margin:0 0 6px;font-size:1.1rem;font-weight:900}
+.card p{margin:0;color:var(--muted);font-size:.95rem;font-weight:700}
+
+footer{text-align:center;color:#a0a0a0;font-size:.85rem;font-weight:800;padding:40px 0 30px;
+  border-top:1px solid var(--line);margin-top:48px}
+
+/* narrow screens: stack the columns */
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;gap:28px;padding-top:40px}
+  nav .tag{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">RETINA<span>SENSE</span></div>
+  <div class="tag">RESEARCH PROTOTYPE</div>
+</nav>
+
+<header class="hero">
+  <div class="hero-text">
+    <span class="pill">AI SCREENING SUPPORT</span>
+    <h1>Diabetic retinopathy, graded in seconds.</h1>
+    <p>Upload a retinal fundus photo and get a severity grade from 0 to 4, with a referable-DR flag. For research use only.</p>
+  </div>
+
+  <div class="upload">
+    <h2>Check a retinal photo</h2>
+    <p class="hint">JPG or PNG · centred retina · well lit</p>
+    <img id="preview" alt="Selected retinal image">
+    <div id="drop">
+      <span class="icon">⬆</span>
+      <span id="droptext">Drop a fundus image here, or click to choose a file</span>
+      <small>Your image is processed on this computer</small>
+    </div>
+    <input id="file" type="file" accept="image/*" hidden>
+    <button id="go" disabled>Analyze image</button>
+    <div class="err" id="err"></div>
+  </div>
+</header>
+
+<div id="result" style="margin-left:auto;margin-right:auto;max-width:1200px;padding:26px 4vw">
+  <span class="badge" id="label"></span>
+  <div class="scale" id="scale"><div></div><div></div><div></div><div></div><div></div></div>
+  <div class="meta"><span id="grade"></span><span id="conf"></span><span id="score"></span></div>
+  <p id="advice"></p>
+  <div class="warn" id="warn"></div>
+  <p class="disc" id="disc"></p>
+</div>
+
+<section class="row">
+  <h3>How it works</h3>
+  <div class="cards">
+    <div class="card"><h4>1. Upload</h4><p>Choose a retinal fundus photo from your computer.</p></div>
+    <div class="card"><h4>2. Quality check</h4><p>Blurry or dark images are rejected, so you can retake them.</p></div>
+    <div class="card"><h4>3. Grade</h4><p>The model returns a grade from No DR to PDR and flags referable cases.</p></div>
+  </div>
+</section>
+
+<footer>RetinaSense AI · Research prototype · Not a diagnosis</footer>
+
+<script>
+const COLORS=["var(--g0)","var(--g1)","var(--g2)","var(--g3)","var(--g4)"];
+const $=id=>document.getElementById(id);
+let current=null;
+
+function setFile(f){
+  if(!f||!f.type.startsWith("image/"))return;
+  current=f;
+  $("preview").src=URL.createObjectURL(f);
+  $("preview").style.display="block";
+  $("droptext").textContent="Choose a different image";
+  $("go").disabled=false;
+  $("result").style.display="none";
+  $("err").style.display="none";
+}
+$("drop").onclick=()=>$("file").click();
+$("file").onchange=e=>setFile(e.target.files[0]);
+["dragenter","dragover"].forEach(ev=>$("drop").addEventListener(ev,e=>{e.preventDefault();$("drop").classList.add("over")}));
+["dragleave","drop"].forEach(ev=>$("drop").addEventListener(ev,e=>{e.preventDefault();$("drop").classList.remove("over")}));
+$("drop").addEventListener("drop",e=>setFile(e.dataTransfer.files[0]));
+
+$("go").onclick=async()=>{
+  if(!current)return;
+  const btn=$("go");
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Analyzing...';
+  $("err").style.display="none";
+  const fd=new FormData();
+  fd.append("file",current);
+  try{
+    const r=await fetch("/predict",{method:"POST",body:fd});
+    const d=await r.json();
+    if(!r.ok)throw new Error(typeof d.detail==="string"?d.detail:"Request failed");
+    show(d);
+  }catch(err){
+    $("err").textContent=err.message;
+    $("err").style.display="block";
+  }
+  btn.disabled=false;
+  btn.textContent="Analyze image";
+};
+
+function show(d){
+  $("result").style.display="block";
+  $("disc").textContent=d.disclaimer;
+  if(!d.quality.ok){
+    // Poor-quality image: no grade, no score, ask for a retake.
+    $("label").textContent="Image quality too low";
+    $("label").style.background="#6b7280";
+    $("scale").style.color="#6b7280";
+    [...$("scale").children].forEach(el=>el.classList.remove("on"));
+    $("grade").textContent="";
+    $("conf").textContent="";
+    $("score").textContent="";
+    $("advice").textContent="Please retake the photo in good light, with the whole retina in focus.";
+    $("warn").style.display="block";
+    $("warn").textContent=d.quality_warning;
+  }else{
+    const c=COLORS[d.grade];
+    $("label").textContent=d.label;
+    $("label").style.background=c;
+    $("scale").style.color=c;
+    [...$("scale").children].forEach((el,i)=>el.classList.toggle("on",i<=d.grade));
+    $("grade").textContent="Grade "+d.grade+" of 4";
+    $("conf").textContent="Confidence: "+d.confidence;
+    $("score").textContent="Score: "+d.score;
+    $("advice").textContent=d.advice+(d.referable?" (Referable)":"");
+    $("warn").style.display="none";
+  }
+  $("result").scrollIntoView({behavior:"smooth"});
+}
+</script>
+</body>
+</html>
